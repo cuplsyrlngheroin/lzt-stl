@@ -46,7 +46,8 @@ cd lzt-stl
 ```cpp
 #include <lzt/vector.h>
 #include <lzt/array.h>
-#include <lzt/unique_ptr.h>
+#include <lzt/memory/unique_ptr.h>
+#include <lzt/memory/make_unique.h>
 
 lzt::vector<int> vec = { 1, 2, 3 };
 vec.push_back(42);
@@ -54,7 +55,7 @@ vec.push_back(42);
 lzt::array<int, 4> arr = { 1, 2, 3 };
 arr.at(3) = 4;
 
-auto ptr = lzt::make_unique<int>(42);
+lzt::unique_ptr<int> ptr = lzt::make_unique<int>(42);
 ```
 
 ## :wheelchair: Планы развития
