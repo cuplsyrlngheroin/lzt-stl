@@ -6,9 +6,184 @@
 #include <stdexcept>
 #include <initializer_list>
 
-#include <lzt/iterator/random_access_iterator.h>
 
 namespace lzt {
+	template<typename T>
+	class array_const_iterator {
+	public:
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = T;
+		using difference_type = ptrdiff_t;
+		using pointer = const T*;
+		using reference = const T&;
+	public:
+		constexpr array_const_iterator() noexcept = default;
+
+		constexpr explicit array_const_iterator(pointer ptr) : _pointer(ptr) {}
+
+		constexpr reference operator*() const noexcept {
+			return *_pointer;
+		}
+
+		constexpr pointer operator->() const noexcept {
+			return _pointer;
+		}
+
+		constexpr array_const_iterator& operator++() noexcept {
+			++_pointer;
+			return *this;
+		}
+
+		constexpr array_const_iterator operator++(int) noexcept {
+			array_const_iterator temp = *this;
+			++(*this);
+			return temp;
+		}
+
+		constexpr array_const_iterator& operator--() noexcept {
+			--_pointer;
+			return *this;
+		}
+
+		constexpr array_const_iterator operator--(int) noexcept {
+			array_const_iterator temp = *this;
+			--(*this);
+			return temp;
+		}
+
+		constexpr array_const_iterator& operator+=(const difference_type offset) noexcept {
+			_pointer += offset;
+			return *this;
+		}
+
+		constexpr array_const_iterator operator+(const difference_type offset) const noexcept {
+			return array_const_iterator(_pointer + offset);
+		}
+
+		friend constexpr array_const_iterator operator+(
+			const difference_type offset, array_const_iterator next) noexcept {
+			next += offset;
+			return next;
+		}
+
+		constexpr array_const_iterator& operator-=(const difference_type offset) noexcept {
+			_pointer -= offset;
+			return *this;
+		}
+
+		constexpr array_const_iterator operator-(const difference_type offset) const noexcept {
+			return array_const_iterator(_pointer - offset);
+		}
+
+		constexpr difference_type operator-(const array_const_iterator& other) const noexcept {
+			return static_cast<difference_type>(_pointer - other._pointer);
+		}
+
+		constexpr reference operator[](const difference_type offset) const noexcept {
+			return *(*this + offset);
+		}
+
+		constexpr bool operator==(const array_const_iterator& other) const noexcept {
+			return _pointer == other._pointer;
+		}
+
+		constexpr bool operator!=(const array_const_iterator& other) const noexcept {
+			return !(*this == other);
+		}
+
+		constexpr bool operator<(const array_const_iterator& other) const noexcept {
+			return _pointer < other._pointer;
+		}
+
+		constexpr bool operator>(const array_const_iterator& other) const noexcept {
+			return other < *this;
+		}
+
+		constexpr bool operator<=(const array_const_iterator& other) const noexcept {
+			return !(other < *this);
+		}
+
+		constexpr bool operator>=(const array_const_iterator& other) const noexcept {
+			return !(*this < other);
+		}
+	protected:
+		pointer _pointer;
+	};
+
+	template<typename T>
+	class array_iterator : public array_const_iterator<T> {
+	public:
+		using myBase = array_const_iterator<T>;
+
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = T;
+		using difference_type = ptrdiff_t;
+		using pointer = T*;
+		using reference = T&;
+	public:
+		using myBase::myBase;
+
+		constexpr reference operator*() const noexcept {
+			return const_cast<reference>(myBase::operator*());
+		}
+
+		constexpr pointer operator->() const noexcept {
+			return const_cast<pointer>(myBase::operator->());
+		}
+
+		constexpr array_iterator& operator++() noexcept {
+			myBase::operator++();
+			return *this;
+		}
+
+		constexpr array_iterator operator++(int) noexcept {
+			array_iterator _Tmp = *this;
+			myBase::operator++();
+			return _Tmp;
+		}
+
+		constexpr array_iterator& operator--() noexcept {
+			myBase::operator--();
+			return *this;
+		}
+
+		constexpr array_iterator operator--(int) noexcept {
+			array_iterator _Tmp = *this;
+			myBase::operator--();
+			return _Tmp;
+		}
+
+		constexpr array_iterator& operator+=(const difference_type offset) noexcept {
+			myBase::operator+=(offset);
+			return *this;
+		}
+
+		constexpr array_iterator operator+(const difference_type offset) const noexcept {
+			return array_iterator(this->_pointer + offset);
+		}
+
+		friend constexpr array_iterator operator+(
+				const difference_type offset, array_iterator next) noexcept {
+			next += offset;
+			return next;
+		}
+
+		constexpr array_iterator& operator-=(const difference_type offset) noexcept {
+			myBase::operator-=(offset);
+			return *this;
+		}
+
+		using myBase::operator-;
+
+		constexpr array_iterator operator-(const difference_type offset) const noexcept {
+			return array_iterator(this->_pointer - offset);
+		}
+
+		constexpr reference operator[](const difference_type offset) const noexcept {
+			return const_cast<reference>(myBase::operator[](offset));
+		}
+	};
+
 	template<typename T, size_t Size>
 	class array {
 	public:
@@ -19,8 +194,8 @@ namespace lzt {
 		using reference = T&;
 		using const_reference = const T&;
 
-		using const_iterator = const_random_access_iterator<T>;
-		using iterator = random_access_iterator<T>;
+		using const_iterator = array_const_iterator<T>;
+		using iterator = array_iterator<T>;
 
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;

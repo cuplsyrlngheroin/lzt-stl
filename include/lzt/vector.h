@@ -5,9 +5,183 @@
 #include <initializer_list>
 #include <algorithm>
 
-#include <lzt/iterator/random_access_iterator.h>
-
 namespace lzt {
+	template<typename vector>
+	class vector_const_iterator {
+	public:
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = typename vector::value_type;
+		using difference_type = typename vector::difference_type;
+		using pointer = typename vector::const_pointer;
+		using reference = typename vector::const_reference;
+	public:
+		constexpr vector_const_iterator() noexcept = default;
+
+		constexpr explicit vector_const_iterator(pointer ptr) : _pointer(ptr) {}
+
+		constexpr reference operator*() const noexcept {
+			return *_pointer;
+		}
+
+		constexpr pointer operator->() const noexcept {
+			return _pointer;
+		}
+
+		constexpr vector_const_iterator& operator++() noexcept {
+			++_pointer;
+			return *this;
+		}
+
+		constexpr vector_const_iterator operator++(int) noexcept {
+			vector_const_iterator temp = *this;
+			++(*this);
+			return temp;
+		}
+
+		constexpr vector_const_iterator& operator--() noexcept {
+			--_pointer;
+			return *this;
+		}
+
+		constexpr vector_const_iterator operator--(int) noexcept {
+			vector_const_iterator temp = *this;
+			--(*this);
+			return temp;
+		}
+
+		constexpr vector_const_iterator& operator+=(const difference_type offset) noexcept {
+			_pointer += offset;
+			return *this;
+		}
+
+		constexpr vector_const_iterator operator+(const difference_type offset) const noexcept {
+			return vector_const_iterator(_pointer + offset);
+		}
+
+		friend constexpr vector_const_iterator operator+(
+			const difference_type offset, vector_const_iterator next) noexcept {
+			next += offset;
+			return next;
+		}
+
+		constexpr vector_const_iterator& operator-=(const difference_type offset) noexcept {
+			_pointer -= offset;
+			return *this;
+		}
+
+		constexpr vector_const_iterator operator-(const difference_type offset) const noexcept {
+			return vector_const_iterator(_pointer - offset);
+		}
+
+		constexpr difference_type operator-(const vector_const_iterator& other) const noexcept {
+			return static_cast<difference_type>(_pointer - other._pointer);
+		}
+
+		constexpr reference operator[](const difference_type offset) const noexcept {
+			return *(*this + offset);
+		}
+
+		constexpr bool operator==(const vector_const_iterator& other) const noexcept {
+			return _pointer == other._pointer;
+		}
+
+		constexpr bool operator!=(const vector_const_iterator& other) const noexcept {
+			return !(*this == other);
+		}
+
+		constexpr bool operator<(const vector_const_iterator& other) const noexcept {
+			return _pointer < other._pointer;
+		}
+
+		constexpr bool operator>(const vector_const_iterator& other) const noexcept {
+			return other < *this;
+		}
+
+		constexpr bool operator<=(const vector_const_iterator& other) const noexcept {
+			return !(other < *this);
+		}
+
+		constexpr bool operator>=(const vector_const_iterator& other) const noexcept {
+			return !(*this < other);
+		}
+	protected:
+		pointer _pointer;
+	};
+
+	template<typename vector>
+	class vector_iterator : public vector_const_iterator<vector> {
+	public:
+		using myBase = vector_const_iterator<vector>;
+
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = typename vector::value_type;
+		using difference_type = typename vector::difference_type;
+		using pointer = typename vector::pointer;
+		using reference = typename vector::reference;
+	public:
+		using myBase::myBase;
+
+		constexpr reference operator*() const noexcept {
+			return const_cast<reference>(myBase::operator*());
+		}
+
+		constexpr pointer operator->() const noexcept {
+			return const_cast<pointer>(myBase::operator->());
+		}
+
+		constexpr vector_iterator& operator++() noexcept {
+			myBase::operator++();
+			return *this;
+		}
+
+		constexpr vector_iterator operator++(int) noexcept {
+			vector_iterator _Tmp = *this;
+			myBase::operator++();
+			return _Tmp;
+		}
+
+		constexpr vector_iterator& operator--() noexcept {
+			myBase::operator--();
+			return *this;
+		}
+
+		constexpr vector_iterator operator--(int) noexcept {
+			vector_iterator _Tmp = *this;
+			myBase::operator--();
+			return _Tmp;
+		}
+
+		constexpr vector_iterator& operator+=(const difference_type offset) noexcept {
+			myBase::operator+=(offset);
+			return *this;
+		}
+
+		constexpr vector_iterator operator+(const difference_type offset) const noexcept {
+			return vector_iterator(this->_pointer + offset);
+		}
+
+		friend constexpr vector_iterator operator+(
+			const difference_type offset, vector_iterator next) noexcept {
+			next += offset;
+			return next;
+		}
+
+		constexpr vector_iterator& operator-=(const difference_type offset) noexcept {
+			myBase::operator-=(offset);
+			return *this;
+		}
+
+		using myBase::operator-;
+
+		constexpr vector_iterator operator-(const difference_type offset) const noexcept {
+			return vector_iterator(this->_pointer - offset);
+		}
+
+		constexpr reference operator[](const difference_type offset) const noexcept {
+			return const_cast<reference>(myBase::operator[](offset));
+		}
+	};
+
 	template <typename T>
 	class vector {
 	public:
@@ -19,8 +193,8 @@ namespace lzt {
 		using reference = T&;
 		using const_reference = const T&;
 
-		using const_iterator = const_random_access_iterator<T>;
-		using iterator = random_access_iterator<T>;
+		using const_iterator = vector_const_iterator<vector>;
+		using iterator = vector_iterator<vector>;
 
 		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
@@ -43,7 +217,7 @@ namespace lzt {
 			}
 		}
 
-		vector& operator=(vector other) noexcept {
+		vector& operator=(vector other) {
 			swap(other);
 			return *this;
 		}
@@ -58,7 +232,7 @@ namespace lzt {
 
 		~vector() {
 			clear();
-			::operator delete(_data, _capacity * sizeof(T));
+			::operator delete(_data);
 		}
 
 		constexpr reference at(const size_type index) {
@@ -390,7 +564,7 @@ namespace lzt {
 			for (size_t i = 0; i < _size; i++)
 				_data[i].~T();
 
-			::operator delete(_data, _capacity * sizeof(T));
+			::operator delete(_data);
 			_data = newData;
 			_capacity = newCapacity;
 		}
