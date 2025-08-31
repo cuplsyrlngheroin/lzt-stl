@@ -19,6 +19,7 @@
 |--------------------|-----------------|-----------------------------------------------------------------------------|
 | **`vector`**       | :heavy_check_mark: Полностью    | Динамический массив с автоматическим изменением размера и move-семантикой |
 | **`array`**        | :heavy_check_mark: Полностью    | Статический массив фиксированного размера, соответствующий стандарту C++17  |
+| `string` | :heavy_check_mark: Полностью    | Собственная реализация строки с поддержкой разных типов символов           |
 
 ### Работа с памятью
 
@@ -44,25 +45,37 @@ cd lzt-stl
 
 2. **Подключение в проект:**
 ```cpp
-#include <lzt/vector.h>
 #include <lzt/array.h>
-#include <lzt/memory/unique_ptr.h>
-#include <lzt/memory/make_unique.h>
-
-lzt::vector<int> vec = { 1, 2, 3 };
-vec.push_back(42);
 
 lzt::array<int, 4> arr = { 1, 2, 3 };
 arr.at(3) = 4;
+```
+
+```cpp
+#include <lzt/vector.h>
+
+lzt::vector<int> vec = { 1, 2, 3 };
+vec.push_back(42);
+```
+
+```cpp
+#include <lzt/memory/unique_ptr.h>
+#include <lzt/memory/make_unique.h>
 
 lzt::unique_ptr<int> ptr = lzt::make_unique<int>(42);
 ```
 
+```cpp
+#include <lzt/string.h>
+
+lzt::string str = "Hello";
+str += " world!";
+```
+
 ## :wheelchair: Планы развития
 
-- [ ] Завершение реализации `basic_string`
-- [ ] Исправление работы `random_access_iterator` для совместимости с алгоритмами STL
-- [ ] Реализация `list` и `forward_list`
+- [x] Завершение реализации `basic_string`
+- [ ] Реализация `list`
 - [ ] Написание комплексных тестов на **GTest**
 - [ ] Реализация **собственного аллокатора**
 - [ ] Добавление поддержки **аллокаторов**
