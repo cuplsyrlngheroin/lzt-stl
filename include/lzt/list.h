@@ -36,6 +36,10 @@ namespace lzt {
 
 		explicit list_const_iterator(detail::base_node* node) noexcept : node_(node) {}
 
+		detail::base_node* node() const noexcept {
+			return node_;
+		}
+
 		reference operator*() const noexcept {
 			return static_cast<detail::list_node<value_type>*>(node_)->elem_;
 		}
@@ -146,7 +150,7 @@ namespace lzt {
 		list(const list& other) : list() {
 			detail::base_node* current = other.head_.next_;
 			while (current != &other.tail_) {
-				detail::list_node<T>* node = 
+				detail::list_node<T>* node =
 					static_cast<detail::list_node<T>*>(current);
 				push_back(node->elem_);
 				current = current->next_;
@@ -289,21 +293,44 @@ namespace lzt {
 				pop_front();
 		}
 
+		iterator insert(const_iterator pos, const value_type& value) {
+			return emplace(pos, value);
+		}
+
+		iterator insert(const_iterator pos, value_type&& value) {
+			return emplace(pos, std::move(value));
+		}
+
+		iterator insert(const_iterator pos, size_type count, const T& value) {
+			if (count == 0) return iterator(pos);
+
+			list<T> temp;
+			for (size_type i = 0; i < count; ++i) {
+				temp.emplace_back(value);
+			}
+
+			return splice(pos, temp);
+		}
+
+		template <typename InputIt>
+		iterator insert(const_iterator pos, InputIt first, InputIt last) {
+			if (first == last) return iterator(pos);
+
+			list<T> temp;
+			for (auto it = first; it != last; ++it) {
+				temp.emplace_back(*it);
+			}
+
+			return splice(pos, temp);
+		}
+
+		iterator insert(const_iterator pos, std::initializer_list<T> ilist) {
+			return insert(pos, ilist.begin(), ilist.end());
+		}
+
 		template <typename... Args>
 		iterator emplace(const_iterator pos, Args&&... args) {
-			detail::base_node* current;
-
-			if (pos == end()) {
-				current = &tail_;
-			} else {
-				current = head_.next_;
-				const_iterator it = begin();
-
-				while (it != pos) {
-					current = current->next_;
-					++it;
-				}
-			}
+			detail::base_node* current = pos.node();
 
 			detail::list_node<T>* new_node =
 				(detail::list_node<T>*)::operator new(sizeof(detail::list_node<T>));
@@ -323,6 +350,32 @@ namespace lzt {
 
 			++size_;
 			return iterator(new_node);
+		}
+
+		iterator erase(const_iterator pos) {
+			if (pos == end()) return end();
+
+			detail::base_node* node_to_delete = pos.node();
+			detail::base_node* next_node = node_to_delete->next_;
+
+			node_to_delete->prev_->next_ = node_to_delete->next_;
+			node_to_delete->next_->prev_ = node_to_delete->prev_;
+
+			detail::list_node<T>* node =
+				static_cast<detail::list_node<T>*>(node_to_delete);
+
+			node->elem_.~T();
+			::operator delete(node);
+
+			--size_;
+			return iterator(next_node);
+		}
+
+		iterator erase(const_iterator first, const_iterator last) {
+			while (first != last) {
+				first = erase(first);
+			}
+			return iterator(last);
 		}
 
 		void push_back(const T& value) {
@@ -357,7 +410,7 @@ namespace lzt {
 		void pop_back() {
 			detail::list_node<T>* last_node =
 				static_cast<detail::list_node<T>*>(tail_.prev_);
-			
+
 			last_node->prev_->next_ = &tail_;
 			tail_.prev_ = last_node->prev_;
 
@@ -407,6 +460,17 @@ namespace lzt {
 			::operator delete(first_node);
 
 			--size_;
+		}
+
+		void resize(size_type count) {
+			resize(count, T());
+		}
+
+		void resize(size_type count, const value_type& value) {
+			while (count > size())
+				emplace_back(value);
+			while (size() > count)
+				pop_back();
 		}
 
 		void swap(list& other) noexcept {
